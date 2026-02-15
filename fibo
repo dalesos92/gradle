@@ -1,35 +1,26 @@
-// Definición de la función Fibonacci
-def fib(n) {
-    int first_num = 0
-    int second_num = 1
-    
-    if (n >= 1) {
-        print first_num
+// Tarea para calcular el área del círculo
+task circle {
+    doLast {
+        if (project.hasProperty('radius')) {
+            double r = Double.parseDouble(radius)
+            // Usar Math.PI (forma fraccionaria de pi)
+            double area = Math.PI * r * r
+            println "Area of circle: " + area
+        } else {
+            println "Please provide radius using -Pradius=<value>"
+        }
     }
-    if (n >= 2) {
-        print " " + second_num
-    }
-    
-    int i = 3
-    while (i <= n) {
-        int next_num = first_num + second_num
-        print " " + next_num
-        first_num = second_num
-        second_num = next_num
-        i = i + 1
-    }
-    println "" // Salto de línea final para limpieza
 }
 
-// Definición de la tarea fibo
-task fibo {
+// Tarea para calcular el área del cuadrado
+task square {
     doLast {
-        // Verifica si la propiedad 'num' existe antes de usarla
-        if (project.hasProperty('num')) {
-            int n = Integer.parseInt(num)
-            fib(n)
+        if (project.hasProperty('side')) {
+            double s = Double.parseDouble(side)
+            double area = s * s
+            println "Area of square: " + area
         } else {
-            println "Please provide the number using -Pnum=<value>"
+            println "Please provide side using -Pside=<value>"
         }
     }
 }
