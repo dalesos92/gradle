@@ -1,55 +1,44 @@
 from flask import Flask, request
-from flask_restful import Resource, Api, abort
-from datetime import datetime
+from flask_restful import Resource, Api, abort, reqparse
+import datetime as dt
 
 app = Flask(__name__)
 api = Api(app)
+
+# Task 2: Definir la instancia de RequestParser
+blogsParser = reqparse.RequestParser()
+# Agregar los argumentos requeridos con sus validaciones
+blogsParser.add_argument('title', type=str, required=True, help="Title is a mandatory argument")
+blogsParser.add_argument('article_text', type=str, required=True, help="Article text is a mandatory argument")
 
 blogs = {}
 
 class BlogsAPI(Resource):
     def get(self, blog_id=None):
-        '''Return 'blogs' dictionary if 'blog_id' is None.
-        
-        if blog_id is provided, 
-        Abort the request if 'blog_id' and not in keys of 'blogs' dictionary, or else
-        Return the blog corresponding to given 'blog_id'
-        '''
+        '''Return 'blogs' dictionary if 'blog_id' is None.'''
         if blog_id is None:
             return blogs
         
+        '''Abort the request if 'blog_id' not in keys of 'blogs' dictionary'''
         if blog_id not in blogs:
-            # Reemplazado f-string por .format()
             abort(404, message="Blog_Id {} doesn't exist".format(blog_id))
             
         return blogs[blog_id]
 
     def post(self, blog_id):
-        '''
-        If 'blog_id' is not in keys of 'blogs' dictionary, create a new dictionary object
-        'blog', with three keys 'title', 'article_text', and 'created_at'.
-        The values of 'title', and 'article_text' to be captured from http form variables:
-        'title', 'article_text.
-        The value of 'created_at' must be current date time string represented by format '%Y-%m-%d %H:%M:%S'
-        
-        Add the created dictionary object to 'blogs' dictionary with key corresponding to given 'blog_id', 
-        and Return the created dictionary object.
-        
-        If 'blog_id' is in keys of 'blogs' dictionary, abort the request.
-        '''
+        '''If 'blog_id' is in keys of 'blogs' dictionary, abort the request.'''
         if blog_id in blogs:
-            # Reemplazado f-string por .format()
             abort(400, message="Blog_Id {} already exists".format(blog_id))
             
-        # Capturar variables del formulario
-        title = request.form.get('title')
-        article_text = request.form.get('article_text')
-        # Generar fecha y hora actual
-        created_at = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        # Task 3: Usar 'blogsParser' para parsear los argumentos
+        args = blogsParser.parse_args()
+        
+        # Crear fecha actual usando el alias 'dt' que viene en el import del template
+        created_at = dt.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         
         blog = {
-            'title': title,
-            'article_text': article_text,
+            'title': args['title'],
+            'article_text': args['article_text'],
             'created_at': created_at
         }
         
@@ -57,40 +46,28 @@ class BlogsAPI(Resource):
         return blog
 
     def put(self, blog_id):
-        '''
-        If given 'blog_id' not in 'blogs' dictionary abort the request with 404 status code and message like shown below.
-        Sample Error message : "Blog_Id 2 doesn't exist"
-        
-        Else, update the details of blog, identified by given 'blog_id', and return the updated blog details.
-        '''
+        '''If given 'blog_id' not in 'blogs' dictionary abort the request'''
         if blog_id not in blogs:
-            # Reemplazado f-string por .format()
             abort(404, message="Blog_Id {} doesn't exist".format(blog_id))
             
-        # Actualizar solo los campos que vengan en la petición (request.form)
-        if 'title' in request.form:
-            blogs[blog_id]['title'] = request.form.get('title')
-        if 'article_text' in request.form:
-            blogs[blog_id]['article_text'] = request.form.get('article_text')
+        # Usar 'blogsParser' para validar y obtener los nuevos argumentos
+        args = blogsParser.parse_args()
+        
+        # Actualizar los detalles
+        blogs[blog_id]['title'] = args['title']
+        blogs[blog_id]['article_text'] = args['article_text']
             
         return blogs[blog_id]
 
     def delete(self, blog_id):
-        '''
-        If 'blog_id' not in keys of 'blogs' dictionary, abort the request with 404 status code and message like shown below.
-        Sample Error message : "Blog_Id 2 doesn't exist"
-        
-        Else delete the blog corresponding to given 'blog_id' from 'blogs' dictionary and respond with a message like shown below.
-        Sample Delete response message : "Blog with Id 3 is deleted"
-        '''
+        '''If 'blog_id' not in keys of 'blogs' dictionary, abort the request'''
         if blog_id not in blogs:
-            # Reemplazado f-string por .format()
             abort(404, message="Blog_Id {} doesn't exist".format(blog_id))
             
         del blogs[blog_id]
-        # Reemplazado f-string por .format()
         return "Blog with Id {} is deleted".format(blog_id)
 
+# Mapear el recurso a las URLs solicitadas
 api.add_resource(BlogsAPI, '/blogs/',
                            '/blogs/<int:blog_id>/')
 
