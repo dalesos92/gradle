@@ -19,7 +19,8 @@ class BlogsAPI(Resource):
             return blogs
         
         if blog_id not in blogs:
-            abort(404, message=f"Blog_Id {blog_id} doesn't exist")
+            # Reemplazado f-string por .format()
+            abort(404, message="Blog_Id {} doesn't exist".format(blog_id))
             
         return blogs[blog_id]
 
@@ -28,7 +29,7 @@ class BlogsAPI(Resource):
         If 'blog_id' is not in keys of 'blogs' dictionary, create a new dictionary object
         'blog', with three keys 'title', 'article_text', and 'created_at'.
         The values of 'title', and 'article_text' to be captured from http form variables:
-        'title', 'article_text'.
+        'title', 'article_text.
         The value of 'created_at' must be current date time string represented by format '%Y-%m-%d %H:%M:%S'
         
         Add the created dictionary object to 'blogs' dictionary with key corresponding to given 'blog_id', 
@@ -37,12 +38,13 @@ class BlogsAPI(Resource):
         If 'blog_id' is in keys of 'blogs' dictionary, abort the request.
         '''
         if blog_id in blogs:
-            abort(400, message=f"Blog_Id {blog_id} already exists")
+            # Reemplazado f-string por .format()
+            abort(400, message="Blog_Id {} already exists".format(blog_id))
             
         # Capturar variables del formulario
         title = request.form.get('title')
         article_text = request.form.get('article_text')
-        # Generar fecha y hora actual en el formato especificado
+        # Generar fecha y hora actual
         created_at = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         
         blog = {
@@ -62,7 +64,8 @@ class BlogsAPI(Resource):
         Else, update the details of blog, identified by given 'blog_id', and return the updated blog details.
         '''
         if blog_id not in blogs:
-            abort(404, message=f"Blog_Id {blog_id} doesn't exist")
+            # Reemplazado f-string por .format()
+            abort(404, message="Blog_Id {} doesn't exist".format(blog_id))
             
         # Actualizar solo los campos que vengan en la petición (request.form)
         if 'title' in request.form:
@@ -81,10 +84,12 @@ class BlogsAPI(Resource):
         Sample Delete response message : "Blog with Id 3 is deleted"
         '''
         if blog_id not in blogs:
-            abort(404, message=f"Blog_Id {blog_id} doesn't exist")
+            # Reemplazado f-string por .format()
+            abort(404, message="Blog_Id {} doesn't exist".format(blog_id))
             
         del blogs[blog_id]
-        return f"Blog with Id {blog_id} is deleted"
+        # Reemplazado f-string por .format()
+        return "Blog with Id {} is deleted".format(blog_id)
 
 api.add_resource(BlogsAPI, '/blogs/',
                            '/blogs/<int:blog_id>/')
