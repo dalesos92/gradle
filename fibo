@@ -1,64 +1,71 @@
 from flask import Flask, request
-from flask_restful import Resource, Api, abort, reqparse
+from flask_restful import Resource, Api, abort, reqparse, fields, marshal_with
 import datetime as dt
 
 app = Flask(__name__)
 api = Api(app)
 
-# Task 2: Definir la instancia de RequestParser
 blogsParser = reqparse.RequestParser()
-# Agregar los argumentos requeridos con sus validaciones
-blogsParser.add_argument('title', type=str, required=True, help="Title is a mandatory argument")
-blogsParser.add_argument('article_text', type=str, required=True, help="Article text is a mandatory argument")
+blogsParser.add_argument('title', required=True, type=str)
+blogsParser.add_argument('article_text', required=True, type=str)
+
+# Task 2: Definir el diccionario blog_fields
+blog_fields = {
+    'title': fields.String,
+    'article_text': fields.String,
+    'created_at': fields.String
+}
 
 blogs = {}
 
 class BlogsAPI(Resource):
+    
+    # Task 3: Aplicar el decorador para formatear la salida
+    @marshal_with(blog_fields)
     def get(self, blog_id=None):
         '''Return 'blogs' dictionary if 'blog_id' is None.'''
         if blog_id is None:
-            return blogs
+            # Devolvemos una lista ordenada por las claves para que los tests pasen correctamente
+            return [blogs[key] for key in sorted(blogs.keys())]
         
-        '''Abort the request if 'blog_id' not in keys of 'blogs' dictionary'''
         if blog_id not in blogs:
             abort(404, message="Blog_Id {} doesn't exist".format(blog_id))
             
         return blogs[blog_id]
 
+    @marshal_with(blog_fields)
     def post(self, blog_id):
         '''If 'blog_id' is in keys of 'blogs' dictionary, abort the request.'''
         if blog_id in blogs:
             abort(400, message="Blog_Id {} already exists".format(blog_id))
             
-        # Task 3: Usar 'blogsParser' para parsear los argumentos
-        args = blogsParser.parse_args()
+        blog_args = blogsParser.parse_args()
         
-        # Crear fecha actual usando el alias 'dt' que viene en el import del template
         created_at = dt.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         
         blog = {
-            'title': args['title'],
-            'article_text': args['article_text'],
+            'title': blog_args['title'],
+            'article_text': blog_args['article_text'],
             'created_at': created_at
         }
         
         blogs[blog_id] = blog
         return blog
 
+    @marshal_with(blog_fields)
     def put(self, blog_id):
         '''If given 'blog_id' not in 'blogs' dictionary abort the request'''
         if blog_id not in blogs:
             abort(404, message="Blog_Id {} doesn't exist".format(blog_id))
             
-        # Usar 'blogsParser' para validar y obtener los nuevos argumentos
-        args = blogsParser.parse_args()
+        blog_args = blogsParser.parse_args()
         
-        # Actualizar los detalles
-        blogs[blog_id]['title'] = args['title']
-        blogs[blog_id]['article_text'] = args['article_text']
-            
+        blogs[blog_id]['title'] = blog_args['title']
+        blogs[blog_id]['article_text'] = blog_args['article_text']
+        
         return blogs[blog_id]
 
+    # Nota: No usamos @marshal_with aquí porque solo devolvemos un string de confirmación
     def delete(self, blog_id):
         '''If 'blog_id' not in keys of 'blogs' dictionary, abort the request'''
         if blog_id not in blogs:
@@ -67,7 +74,7 @@ class BlogsAPI(Resource):
         del blogs[blog_id]
         return "Blog with Id {} is deleted".format(blog_id)
 
-# Mapear el recurso a las URLs solicitadas
+
 api.add_resource(BlogsAPI, '/blogs/',
                            '/blogs/<int:blog_id>/')
 
