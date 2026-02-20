@@ -1,47 +1,93 @@
-1. Solucionar el error de directorios (Enlace Simbólico)
-Dado que no puedes editar el archivo score.sh, vamos a crear un enlace simbólico. Esto engañará al script de evaluación para que, cuando busque la carpeta oss, el sistema lo redirija automáticamente a tu carpeta real pro.
+from flask import Flask, request
+from flask_restful import Resource, Api, abort
+from datetime import datetime
 
-Abre la terminal integrada y ejecuta este comando asegurándote de estar en la ruta base del proyecto:
+app = Flask(__name__)
+api = Api(app)
 
-Bash
-ln -s /projects/challenge/artifactory-pro-6.8.7 /projects/challenge/artifactory-oss-6.8.7
-2. Iniciar Artifactory
-Una vez creado el enlace, procede a iniciar el servidor. Ejecuta estos comandos en la misma terminal:
+blogs = {}
 
-Bash
-cd /projects/challenge/artifactory-pro-6.8.7/bin/
-./artifactory.sh start
-Nota: Espera unos momentos tras ejecutar el comando. El sistema escribirá internamente el mensaje Artifactory successfully started en los logs, cumpliendo así la primera condición de tu archivo score.sh.
+class BlogsAPI(Resource):
+    def get(self, blog_id=None):
+        '''Return 'blogs' dictionary if 'blog_id' is None.
+        
+        if blog_id is provided, 
+        Abort the request if 'blog_id' and not in keys of 'blogs' dictionary, or else
+        Return the blog corresponding to given 'blog_id'
+        '''
+        if blog_id is None:
+            return blogs
+        
+        if blog_id not in blogs:
+            abort(404, message=f"Blog_Id {blog_id} doesn't exist")
+            
+        return blogs[blog_id]
 
-3. Acceder a la plataforma
-En el menú superior de tu editor, selecciona Run --> Open Preview. Esto abrirá la interfaz web de Artifactory en una pestaña.
+    def post(self, blog_id):
+        '''
+        If 'blog_id' is not in keys of 'blogs' dictionary, create a new dictionary object
+        'blog', with three keys 'title', 'article_text', and 'created_at'.
+        The values of 'title', and 'article_text' to be captured from http form variables:
+        'title', 'article_text'.
+        The value of 'created_at' must be current date time string represented by format '%Y-%m-%d %H:%M:%S'
+        
+        Add the created dictionary object to 'blogs' dictionary with key corresponding to given 'blog_id', 
+        and Return the created dictionary object.
+        
+        If 'blog_id' is in keys of 'blogs' dictionary, abort the request.
+        '''
+        if blog_id in blogs:
+            abort(400, message=f"Blog_Id {blog_id} already exists")
+            
+        # Capturar variables del formulario
+        title = request.form.get('title')
+        article_text = request.form.get('article_text')
+        # Generar fecha y hora actual en el formato especificado
+        created_at = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        
+        blog = {
+            'title': title,
+            'article_text': article_text,
+            'created_at': created_at
+        }
+        
+        blogs[blog_id] = blog
+        return blog
 
-Haz clic en el botón Login ubicado en la esquina superior derecha.
+    def put(self, blog_id):
+        '''
+        If given 'blog_id' not in 'blogs' dictionary abort the request with 404 status code and message like shown below.
+        Sample Error message : "Blog_Id 2 doesn't exist"
+        
+        Else, update the details of blog, identified by given 'blog_id', and return the updated blog details.
+        '''
+        if blog_id not in blogs:
+            abort(404, message=f"Blog_Id {blog_id} doesn't exist")
+            
+        # Actualizar solo los campos que vengan en la petición (request.form)
+        if 'title' in request.form:
+            blogs[blog_id]['title'] = request.form.get('title')
+        if 'article_text' in request.form:
+            blogs[blog_id]['article_text'] = request.form.get('article_text')
+            
+        return blogs[blog_id]
 
-Inicia sesión con las credenciales indicadas en el reto:
+    def delete(self, blog_id):
+        '''
+        If 'blog_id' not in keys of 'blogs' dictionary, abort the request with 404 status code and message like shown below.
+        Sample Error message : "Blog_Id 2 doesn't exist"
+        
+        Else delete the blog corresponding to given 'blog_id' from 'blogs' dictionary and respond with a message like shown below.
+        Sample Delete response message : "Blog with Id 3 is deleted"
+        '''
+        if blog_id not in blogs:
+            abort(404, message=f"Blog_Id {blog_id} doesn't exist")
+            
+        del blogs[blog_id]
+        return f"Blog with Id {blog_id} is deleted"
 
-Username: admin
+api.add_resource(BlogsAPI, '/blogs/',
+                           '/blogs/<int:blog_id>/')
 
-Password: password
-
-4. Crear el Repositorio Maven
-Realiza los siguientes pasos dentro de la interfaz de Artifactory para cumplir con el objetivo del reto:
-
-Ve al panel izquierdo y selecciona la pestaña Admin (el icono de engranaje).
-
-En el menú de opciones, busca la sección Repositories y haz clic en Local.
-
-Haz clic en el botón +New en la esquina superior derecha.
-
-Selecciona el tipo de paquete haciendo clic en el icono de Maven.
-
-En el campo Repository Key, ingresa exactamente el nombre: Sample
-
-Desplázate hasta el final de la pantalla de configuración y haz clic en Save and Finish.
-
-Nota: Al guardar, la plataforma registrará el evento Creating repository en los logs, cumpliendo con la segunda condición exacta que busca el test de calificación.
-
-5. Evaluar el reto
-Vuelve al panel izquierdo donde están las instrucciones del reto (QUESTION DESCRIPTION), baja hasta el final y haz clic en el botón 'Summary' (o 'Submit'). El script leerá correctamente los logs gracias a nuestro enlace y obtendrás tu FS_SCORE:100%.
-
-¿Pudiste ejecutar el comando del enlace simbólico sin problemas en la terminal?
+if __name__ == '__main__':
+    app.run(debug=True)
